@@ -1,0 +1,48 @@
+# gperftools has been added via RDKC-5839.
+
+Steps to use the gperftools:
+
+1) Download the gperftools source code, 
+	git clone https://github.com/gperftools/gperftools.git
+        Or use patch the below gerrit link. 
+        https://gerrit.teamccp.com/#/q/topic:RDKC-5839-memleak-tool+(status:open+OR+status:merged)
+
+2) compile the source code
+   Use the gerrit link to compile the source code. 
+   Or manually follow the below steps:
+   - ./configure --prefix=<install path> --enable-heap-checker
+   - make 
+   - make install
+
+3) Link your executable with tcmalloc library. Use libtcmalloc.so which is generated after steps 1 and 2.
+    -add -ltcmalloc to the link-time step for your executable in component makefile. 
+
+4) Run the binary
+    use the below commands to run your binary with heap checker utility
+   for Memory leak check: 
+     env HEAPCHECK=draconian <your binary compiled with tcmalloc> <args to your binary>
+
+   for heap profile:
+     env HEAPPROFILE=<heap profile name to dump heap data> <my_binary_compiled_with_tcmalloc>
+
+
+5) Analyze the heap dump
+   Once process(binary_with_tcmalloc) exit it will generate the heap dump file (like: /tmp/webpa.3661.main-end.heap) under /tmp which can be used to analyze memory leak using pprof tool. 
+   (pprof tool get generated alongwith other libs when you compile gperftools.)
+
+   Command to analyze the heap dump using pprof tool.
+     <pprof path>/pprof <binary_with_tcmalloc> <"heap dump file"> --inuse_objects --lines --heapcheck --edgefraction=1e-10 --nodefraction=1e-10 --lib_prefix=<your lib path>
+   Example to use pprof tool to analyze the heap dump.
+     pprof ./usr/bin/webpa "./webpa.3661.main-end.heap" --inuse_objects --lines --heapcheck --edgefraction=1e-10 --nodefraction=1e-10 --lib_prefix=<your lib path>
+
+Note: Pprof tool can not be run on devices(xcam,xcam2,icam2) due to other dependencies which we cannot install on cam. so we can use x86 pprof executable placed under <root_path>/utility/gperftools/gperftool-x86
+ - On x86 machine you can run like this.
+   <x86 pprof executable path>/pprof <binary_compiled_with_tcmalloc> "./webpa.3661.main-end.heap" --inuse_objects --lines --heapcheck --edgefraction=1e-10 --nodefraction=1e-10 --lib_prefix=<your lib path>
+
+Plz refer below link for further details:
+https://gperftools.github.io/gperftools/heap_checker.html
+https://gperftools.github.io/gperftools/heapprofile.html
+
+
+
+
